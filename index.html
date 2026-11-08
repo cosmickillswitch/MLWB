@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1D6A59">
+<meta name="description" content="Alethic, deontic and epistemic modal logic with selectable axioms, tableau proofs and countermodels.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Modal Logic Workbench</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+/* Layout: one column. Scrollable tab strip of modal logics, then Axioms, Symbols, Argument builder, and results with a step-through tableau and a Kripke countermodel. */
+:root{
+  --bg:#EDF0F3; --paper:#FBFCFD; --ink:#17202B; --muted:#5A6574; --rule:#C7D0D9; --field:#F3F5F8;
+  --accent:#1D6A59; --accent-ink:#FFFFFF; --mark:#FFE6A3; --ref:#D9EEE7; --bad:#9E3527; --badbg:#F8E4E0; --okbg:#E1F1EB; --warn:#8A5A00; --agent2:#8A5A00; --agent3:#3D5BA9;
+  --f-formula:"STIX Two Text","Cambria Math","Times New Roman",serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10151B; --paper:#171F28; --ink:#E5EAF0; --muted:#98A4B2; --rule:#33404D; --field:#121921;
+  --accent:#5DC3A7; --accent-ink:#0E1A16; --mark:#56461A; --ref:#1D3A33; --bad:#E8806F; --badbg:#3A1F1B; --okbg:#18322B; --warn:#E0B357; --agent2:#E0B357; --agent3:#8FA9F0; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10151B; --paper:#171F28; --ink:#E5EAF0; --muted:#98A4B2; --rule:#33404D; --field:#121921;
+  --accent:#5DC3A7; --accent-ink:#0E1A16; --mark:#56461A; --ref:#1D3A33; --bad:#E8806F; --badbg:#3A1F1B; --okbg:#18322B; --warn:#E0B357; --agent2:#E0B357; --agent3:#8FA9F0; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:880px;margin:0 auto;padding-block:18px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
+header h1{font-family:var(--f-formula);font-weight:600;font-size:1.85rem;margin:0;letter-spacing:-.01em}
+header p{margin:2px 0 0;color:var(--muted)}
+.tabs{display:flex;gap:4px;overflow-x:auto;scroll-snap-type:x mandatory;background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:4px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:1 0 auto;min-width:110px;scroll-snap-align:start;font:inherit;font-weight:600;font-size:.92rem;padding:9px 10px;border:0;border-radius:7px;background:transparent;color:var(--muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;line-height:1.2}
+.tabs button small{font-family:var(--f-formula);font-weight:400;font-size:.95rem;opacity:.9}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.intro{margin:0;color:var(--muted);max-width:68ch}
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.cardhead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+.cardhead h2{margin:0;font-family:var(--f-formula);font-weight:600;font-size:1.2rem}
+.label{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.ctl{display:inline-flex;align-items:center;gap:6px;font-size:.88rem;color:var(--muted)}
+select,input:not([type]),input[type=text]{font:inherit;color:var(--ink);background:var(--field);border:1px solid var(--rule);border-radius:7px;padding:6px 8px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sysname{font-family:var(--f-formula);font-size:1.5rem;font-weight:600;color:var(--accent)}
+.axioms{display:flex;flex-direction:column;gap:6px}
+.ax{display:grid;grid-template-columns:auto 2.2em 1fr;gap:4px 10px;align-items:start;padding:8px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--bg);cursor:pointer}
+.ax.on{border-color:var(--accent);background:var(--okbg)}
+.ax input{margin-top:5px;accent-color:var(--accent);width:18px;height:18px}
+.ax .an{font-family:var(--f-formula);font-weight:600;font-size:1.15rem}
+.ax .af{font-family:var(--f-formula);font-size:1.08rem}
+.ax .ad{font-size:.84rem;color:var(--muted);grid-column:3}
+.ax .fr{font-family:var(--f-mono);font-size:.72rem;color:var(--accent);margin-left:6px;white-space:nowrap}
+.ax.fixed{cursor:default;opacity:.85}
+.symgrid{display:flex;flex-direction:column;gap:8px}
+.symrow{display:flex;gap:6px;align-items:center}
+.symrow .sl{width:3.2em;text-align:center;font-family:var(--f-formula);font-size:1.1rem;flex:none}
+.symrow .sm{flex:1;min-width:0}
+.hint{font-size:.82rem;color:var(--muted);margin:0}
+.hint code,.mono{font-family:var(--f-mono);font-size:.8rem}
+.keys{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;flex-wrap:wrap;gap:5px;background:var(--paper);padding:8px 0;border-bottom:1px solid var(--rule)}
+.keys button{font-family:var(--f-formula);font-size:1.05rem;min-width:36px;padding:3px 7px;border:1px solid var(--rule);background:var(--field);color:var(--ink);border-radius:6px;cursor:pointer}
+.keys button.k-sym{color:var(--accent);font-weight:600}
+.stmt{border:1px solid var(--rule);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:8px;background:var(--bg)}
+.stmt.concl{border-color:var(--accent)}
+.stmthead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.qrow,.boxes{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.qrow select{font-family:var(--f-formula);font-size:1.05rem}
+.slot{display:inline-flex;align-items:center}
+.slot .bpre{border-radius:7px 0 0 7px;border-right:0;font-family:var(--f-formula);min-width:3em;padding-left:6px}
+.slot .box{border-radius:0 7px 7px 0;font-family:var(--f-formula);font-size:1.12rem;width:7em;max-width:44vw}
+.op{font-family:var(--f-formula);font-size:1rem}
+.mini{font:inherit;font-size:.82rem;padding:5px 9px;border:1px dashed var(--rule);background:transparent;color:var(--muted);border-radius:7px;cursor:pointer}
+.mini:hover{color:var(--ink);border-color:var(--accent)}
+.preview{font-size:.88rem;display:flex;flex-direction:column;gap:2px;min-width:0}
+.preview .pf{font-family:var(--f-formula);font-size:1.08rem;overflow-wrap:anywhere}
+.preview .pe{color:var(--muted);font-style:italic;font-family:var(--f-formula);font-size:1rem}
+.preview .perr{color:var(--bad)}
+.go{font:inherit;font-weight:600;background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;padding:11px 16px;cursor:pointer;align-self:flex-start}
+.status{padding:10px 12px;border-radius:8px;font-size:.92rem}
+.status.ok{background:var(--okbg)}
+.status.bad{background:var(--badbg)}
+.status.bad strong{color:var(--bad)}
+.status.meh{background:var(--field);border:1px solid var(--rule)}
+.f{font-family:var(--f-formula);font-size:1.03em}
+.results{display:flex;flex-direction:column;gap:14px}
+.panel{background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.panel h3{margin:0;font-family:var(--f-formula);font-size:1.1rem;font-weight:600}
+.panel p{margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--f-formula);font-size:.98rem;padding:3px 10px;border-radius:999px;border:1px solid var(--rule);display:inline-flex;gap:6px;align-items:center}
+.chip.yes{background:var(--okbg);border-color:var(--accent)}
+.chip.no{background:var(--badbg);color:var(--bad);border-color:transparent}
+.chip.cur{outline:2px solid var(--ink);outline-offset:1px}
+.legend{font-size:.85rem;color:var(--muted)}
+.kripke{width:100%;max-width:420px;height:auto}
+.kripke .wc{fill:var(--paper);stroke:var(--ink);stroke-width:1.6}
+.kripke .w0{stroke-width:2.6}
+.kripke .wn{fill:var(--ink);font-family:var(--f-formula);font-size:15px;font-weight:600}
+.kripke .wv{fill:var(--muted);font-family:var(--f-formula);font-size:13px}
+.kripke .e0{stroke:var(--accent);fill:none;stroke-width:1.6}
+.kripke .e1{stroke:var(--agent2);fill:none;stroke-width:1.6;stroke-dasharray:5 3}
+.kripke .e2{stroke:var(--agent3);fill:none;stroke-width:1.6;stroke-dasharray:2 3}
+.kripke .m0{fill:var(--accent)} .kripke .m1{fill:var(--agent2)} .kripke .m2{fill:var(--agent3)}
+.model{font-family:var(--f-formula);font-size:1rem;display:flex;flex-direction:column;gap:2px}
+.sheet{background:var(--paper);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+.sheethead{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 12px;padding:12px 14px;border-bottom:1px solid var(--rule)}
+.sheethead .seqshow{font-family:var(--f-formula);font-size:1.08rem;overflow-wrap:anywhere}
+.scroller{overflow-x:auto;padding:10px 6px 14px}
+.proof{width:max-content;min-width:100%}
+.row{display:grid;grid-template-columns:2.4em 1fr auto;align-items:stretch;border-radius:4px}
+.row.cur{background:var(--mark)}
+.row.isref{background:var(--ref)}
+.num{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);text-align:right;padding:7px 8px 0 0;font-variant-numeric:tabular-nums}
+.fcell{display:flex;min-width:0}
+.bar{width:16px;flex:none;border-left:2px solid var(--rule)}
+.ftxt{font-family:var(--f-formula);font-size:1.1rem;white-space:nowrap;padding:4px 14px 4px 4px;align-self:center}
+.wt{font-family:var(--f-mono);font-size:.78rem;padding:1px 5px;border-radius:4px;background:var(--field);border:1px solid var(--rule);margin-right:4px}
+.ftxt .sgn{color:var(--muted);margin:0 4px}
+.ftxt.false .sgn{color:var(--bad)}
+.ftxt.rel{color:var(--accent)}
+.ftxt.br{font-family:var(--f-body);font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.ftxt.close{color:var(--bad);font-family:var(--f-body);font-weight:600;font-size:.92rem}
+.ftxt.open{color:var(--accent);font-family:var(--f-body);font-weight:600;font-size:.92rem}
+.just{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);padding:8px 10px 0 12px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.row.cur .just,.row.cur .num{color:var(--ink)}
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 14px;border-top:1px solid var(--rule)}
+.controls button{font:inherit;font-size:.88rem;font-weight:500;padding:6px 12px;border-radius:7px;border:1px solid var(--rule);background:var(--field);color:var(--ink);cursor:pointer}
+.controls button:disabled{opacity:.4;cursor:default}
+.controls input[type=range]{flex:1;min-width:120px;accent-color:var(--accent)}
+.counter{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.explain{padding:14px;border-top:1px solid var(--rule);display:flex;flex-direction:column;gap:6px}
+.explain h4{margin:0;font-family:var(--f-formula);font-weight:600;font-size:1.12rem}
+.explain p{margin:0;max-width:66ch}
+@media (prefers-reduced-motion:no-preference){.row{transition:background-color .15s}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Modal Logic Workbench</h1>
+    <p>Pick a modal logic and its axioms, build an argument, then step through a possible-worlds proof.</p>
+  </header>
+  <nav class="tabs" role="tablist" id="tabs">
+    <button role="tab" id="tab-alethic" data-tab="alethic">Alethic<small>□ ◇</small></button>
+    <button role="tab" id="tab-deontic" data-tab="deontic">Deontic<small>O P F</small></button>
+    <button role="tab" id="tab-epistemic" data-tab="epistemic">Epistemic<small>K M</small></button>
+  </nav>
+  <p class="intro" id="intro"></p>
+  <div id="builder" style="display:flex;flex-direction:column;gap:16px"></div>
+  <div class="results" id="result" aria-live="polite"></div>
+</div>
+
+<script id="core">
+/* ================= formulas ================= */
+const BOT={t:'bot'};
+const mk=(t,a,b)=>({t,a,b});
+const atom=p=>({t:'atom',p});
+const SYM={and:'∧',or:'∨',imp:'→',iff:'↔'};
+const SUB='₀₁₂₃₄₅₆₇₈₉';
+const sub=n=>String(n).split('').map(d=>SUB[+d]).join('');
+const isM=f=>f.t==='box'||f.t==='dia';
+function key(f){switch(f.t){case'atom':return f.p;case'bot':return'⊥';case'not':return'¬'+key(f.a);case'box':return'□'+f.i+key(f.a);case'dia':return'◇'+f.i+key(f.a);default:return'('+key(f.a)+SYM[f.t]+key(f.b)+')';}}
+function opSym(f,tab,nA){
+  if(tab==='deontic')return f.t==='box'?(f.as==='F'?'F':'O'):'P';
+  if(tab==='epistemic'){const s=f.t==='box'?'K':'M';return nA>1?s+sub(f.i+1):s;}
+  return f.t==='box'?'□':'◇';}
+const simple=f=>f.t==='atom'||f.t==='bot'||f.t==='not'||isM(f);
+function str(f,tab,nA){
+  const S=g=>str(g,tab,nA);
+  switch(f.t){
+    case'atom':return f.p;case'bot':return'⊥';
+    case'not':{const s=S(f.a);return'¬'+(simple(f.a)?s:'('+s+')');}
+    case'box':case'dia':{
+      if(f.as==='F'&&f.a.t==='not'){const s=S(f.a.a);return'F'+(simple(f.a.a)?s:'('+s+')');}
+      const s=S(f.a);return opSym(f,tab,nA)+(simple(f.a)?s:'('+s+')');}
+  }
+  const wrap=(c,right)=>{const s=S(c);if(simple(c))return s;if(c.t===f.t&&(f.t==='and'||f.t==='or'||(f.t==='imp'&&right)))return s;return'('+s+')';};
+  return wrap(f.a,false)+' '+SYM[f.t]+' '+wrap(f.b,true);
+}
+const OPS=[['<->','iff'],['<=>','iff'],['↔','iff'],['->','imp'],['=>','imp'],['→','imp'],['⊃','imp'],['/\\','and'],['∧','and'],['&&','and'],['&','and'],['^','and'],['\\/','or'],['∨','or'],['||','or'],['|','or'],
+  ['¬','not'],['~','not'],['!','not'],['-','not'],['⊥','bot'],['#','bot'],['(','('],[')',')'],['[]','box'],['□','box'],['◻','box'],['<>','dia'],['◇','dia'],['◊','dia'],['⋄','dia']];
+function tokenize(s,tab){
+  const toks=[];let i=0;
+  while(i<s.length){const c=s[i];if(/\s/.test(c)){i++;continue;}
+    const m=OPS.find(([k])=>s.startsWith(k,i));if(m){toks.push({t:m[1],i:0});i+=m[0].length;continue;}
+    if(/[a-z]/.test(c)){const w=/^[a-z][a-z0-9_']*/.exec(s.slice(i))[0];
+      const kw={and:'and',or:'or',not:'not',implies:'imp',iff:'iff',bot:'bot',false:'bot'}[w];
+      toks.push(kw?{t:kw}:{t:'atom',p:w});i+=w.length;continue;}
+    if(/[A-Z]/.test(c)){
+      if(tab==='deontic'&&'OPF'.includes(c)){toks.push({t:c==='O'?'box':c==='P'?'dia':'forbid',i:0});i++;continue;}
+      if(tab==='epistemic'&&'KM'.includes(c)){i++;let n=1;
+        const m2=/^(?:_?([0-9])|([₀-₉]))/.exec(s.slice(i));
+        if(m2){n=m2[1]!=null?+m2[1]:SUB.indexOf(m2[2]);i+=m2[0].length;}
+        toks.push({t:c==='K'?'box':'dia',i:n-1});continue;}
+      throw new Error(tab==='alethic'?'Use □ and ◇ for modal operators. Variables are lowercase, like p.':tab==='deontic'?'Deontic operators are O, P and F. Variables are lowercase, like p.':'Epistemic operators are K and M. Variables are lowercase, like p.');}
+    throw new Error('I don’t recognise “'+c+'”.');}
+  return toks;}
+function parse(s,tab,nA){
+  nA=nA||1;const toks=tokenize(s,tab);let p=0;
+  const peek=()=>toks[p]&&toks[p].t;
+  const iff=()=>{let l=imp();while(peek()==='iff'){p++;l=mk('iff',l,imp());}return l;};
+  const imp=()=>{const l=or();if(peek()==='imp'){p++;return mk('imp',l,imp());}return l;};
+  const or=()=>{let l=and();while(peek()==='or'){p++;l=mk('or',l,and());}return l;};
+  const and=()=>{let l=un();while(peek()==='and'){p++;l=mk('and',l,un());}return l;};
+  const un=()=>{const t=toks[p];
+    if(!t)throw new Error('The formula ends too early.');
+    if(t.t==='not'){p++;return mk('not',un());}
+    if(t.t==='box'||t.t==='dia'||t.t==='forbid'){p++;
+      if(t.i<0||t.i>=nA)throw new Error('There is no agent '+(t.i+1)+'. Add more agents above.');
+      const a=un();if(t.t==='forbid')return{t:'box',i:0,a:mk('not',a),as:'F'};return{t:t.t,i:t.i,a};}
+    if(t.t==='('){p++;const f=iff();if(peek()!==')')throw new Error('A “(” is missing its “)”.');p++;return f;}
+    if(t.t==='atom'){p++;return atom(t.p);}
+    if(t.t==='bot'){p++;return BOT;}
+    throw new Error('Expected a formula but found “'+(SYM[t.t]||t.t)+'”.');};
+  if(!toks.length)throw new Error('Empty box.');
+  const f=iff();if(p<toks.length)throw new Error('Unexpected “'+(SYM[toks[p].t]||toks[p].p||toks[p].t)+'” after a complete formula.');
+  return f;}
+function atomsOf(f,s){s=s||new Set();if(f.t==='atom')s.add(f.p);else if(f.a){atomsOf(f.a,s);if(f.b)atomsOf(f.b,s);}return s;}
+
+/* ================= systems ================= */
+const AXES=['D','T','B','4','5'];
+const SYSTEMS=[['K',''],['D','D'],['T','T'],['B','TB'],['K4','4'],['S4','T4'],['K45','45'],['KD45','D45'],['S5','T5'],['KB','B'],['KD4','D4'],['KD5','D5'],['KDB','DB'],['KB5','B5']];
+function normAx(ax){const s=new Set(AXES.filter(a=>ax[a]));
+  if(s.has('T'))s.delete('D');
+  if(s.has('T')&&(s.has('5')||(s.has('B')&&s.has('4')))){return'T5';}
+  if(s.has('B')&&s.has('4')&&!s.has('5'))s.add('5');
+  if(s.has('B')&&s.has('5'))s.delete('4'),s.add('4');
+  return AXES.filter(a=>s.has(a)).join('');}
+function sysName(ax){const n=normAx(ax);const hit=SYSTEMS.find(([,k])=>normAx(axFrom(k))===n);return hit?hit[0]:'K'+n;}
+function axFrom(k){const o={};AXES.forEach(a=>o[a]=k.includes(a));return o;}
+
+/* ================= tableau ================= */
+function tableau(premises,goal,ax,nA,cap){
+  cap=cap||9;nA=nA||1;
+  const lines=[];let steps=0;
+  const add=o=>{lines.push(o);return lines.length;};
+  const nk=(s,w,k)=>(s?'T':'F')+w+'|'+k;
+  const ek=(i,w,v)=>i+':'+w+'>'+v;
+  const mkB=()=>({nodes:[],idx:new Map(),edges:new Map(),worlds:1,done:new Set(),depth:0,path:'',unfinished:false,blockedBy:{}});
+  const clone=b=>({nodes:b.nodes.slice(),idx:new Map(b.idx),edges:new Map(b.edges),worlds:b.worlds,done:new Set(b.done),depth:b.depth,path:b.path,unfinished:b.unfinished,blockedBy:Object.assign({},b.blockedBy)});
+  function addNode(b,w,s,f,rule,refs,extra){
+    const k=key(f),id=nk(s,w,k);if(b.idx.has(id))return{dup:true};
+    const ln=add(Object.assign({kind:'node',w,s,f,rule,refs,depth:b.depth},extra||{}));
+    b.nodes.push({w,s,f,k,ln});b.idx.set(id,ln);
+    const opp=b.idx.get(nk(!s,w,k));
+    if(opp){add({kind:'close',w,refs:[Math.min(opp,ln),Math.max(opp,ln)],depth:b.depth,f});return{closed:true};}
+    if(s&&f.t==='bot'){add({kind:'close',w,refs:[ln],depth:b.depth,f,bot:true});return{closed:true};}
+    return{ln};}
+  function addEdge(b,i,w,v,rule,refs){const k=ek(i,w,v);if(b.edges.has(k))return 0;const ln=add({kind:'rel',i,w,v,rule,refs,depth:b.depth});b.edges.set(k,{i,w,v,ln});return ln;}
+  const succ=(b,i,w)=>{const o=[];for(let v=0;v<b.worlds;v++)if(b.edges.has(ek(i,w,v)))o.push(v);return o;};
+  function relClose(b){
+    for(let i=0;i<nA;i++){
+      if(ax.T)for(let w=0;w<b.worlds;w++)if(addEdge(b,i,w,w,'T',[]))return true;
+      const E=[...b.edges.values()].filter(e=>e.i===i);
+      if(ax.B)for(const e of E)if(addEdge(b,i,e.v,e.w,'B',[e.ln]))return true;
+      if(ax['4'])for(const a of E)for(const c of E)if(a.v===c.w&&addEdge(b,i,a.w,c.v,'4',[a.ln,c.ln]))return true;
+      if(ax['5'])for(const a of E)for(const c of E)if(a.w===c.w&&addEdge(b,i,a.v,c.v,'5',[a.ln,c.ln]))return true;}
+    return false;}
+  function blocked(b,w){
+    const set=u=>new Set(b.nodes.filter(n=>n.w===u).map(n=>(n.s?'T':'F')+n.k));
+    const sw=set(w);
+    for(let u=0;u<w;u++){const su=set(u);if([...sw].every(x=>su.has(x))){b.blockedBy[w]=u;return true;}}
+    return false;}
+  const alpha=n=>{const f=n.f,s=n.s;
+    if(f.t==='not')return[[!s,f.a]];
+    if(s&&f.t==='and')return[[true,f.a],[true,f.b]];
+    if(!s&&f.t==='or')return[[false,f.a],[false,f.b]];
+    if(!s&&f.t==='imp')return[[true,f.a],[false,f.b]];
+    return null;};
+  const beta=n=>{const f=n.f,s=n.s;
+    if(s&&f.t==='or')return[[[true,f.a]],[[true,f.b]]];
+    if(!s&&f.t==='and')return[[[false,f.a]],[[false,f.b]]];
+    if(s&&f.t==='imp')return[[[false,f.a]],[[true,f.b]]];
+    if(s&&f.t==='iff')return[[[true,f.a],[true,f.b]],[[false,f.a],[false,f.b]]];
+    if(!s&&f.t==='iff')return[[[true,f.a],[false,f.b]],[[false,f.a],[true,f.b]]];
+    return null;};
+  function expand(b){
+    for(;;){
+      if(++steps>5000||lines.length>900){b.unfinished=true;add({kind:'open',depth:b.depth,unfinished:true});return{open:true,b,unfinished:true};}
+      let acted=false;
+      for(const n of b.nodes){if(b.done.has(n.ln))continue;const alt=alpha(n);if(!alt)continue;b.done.add(n.ln);
+        for(const[s,g]of alt){const r=addNode(b,n.w,s,g,'prop',[n.ln]);if(r.closed)return{closed:true};}
+        acted=true;break;}
+      if(acted)continue;
+      if(relClose(b))continue;
+      for(const n of b.nodes){const f=n.f;if(!((n.s&&f.t==='box')||(!n.s&&f.t==='dia')))continue;
+        for(const v of succ(b,f.i,n.w)){const r=addNode(b,v,n.s,f.a,'nu',[n.ln,b.edges.get(ek(f.i,n.w,v)).ln]);if(r.closed)return{closed:true};if(!r.dup){acted=true;break;}}
+        if(acted)break;}
+      if(acted)continue;
+      if(ax.D&&!ax.T){for(const n of b.nodes){const f=n.f;if(!((n.s&&f.t==='box')||(!n.s&&f.t==='dia')))continue;if(succ(b,f.i,n.w).length)continue;
+        if(b.worlds>=cap){b.unfinished=true;continue;}const v=b.worlds++;addEdge(b,f.i,n.w,v,'D',[n.ln]);acted=true;break;}
+        if(acted)continue;}
+      for(const n of b.nodes){const f=n.f;if(!((!n.s&&f.t==='box')||(n.s&&f.t==='dia'))||b.done.has(n.ln))continue;
+        if(succ(b,f.i,n.w).some(v=>b.idx.has(nk(n.s,v,key(f.a))))){b.done.add(n.ln);continue;}
+        if(ax['4']&&blocked(b,n.w))continue;
+        if(b.worlds>=cap){b.unfinished=true;continue;}
+        const v=b.worlds++;const el=addEdge(b,f.i,n.w,v,'pi',[n.ln]);b.done.add(n.ln);
+        const r=addNode(b,v,n.s,f.a,'piNode',[n.ln,el]);if(r.closed)return{closed:true};
+        acted=true;break;}
+      if(acted)continue;
+      let best=null,bs=-1;
+      for(const n of b.nodes){if(b.done.has(n.ln))continue;const alts=beta(n);if(!alts)continue;
+        const sc=alts.filter(a=>a.some(([s,g])=>b.idx.has(nk(!s,n.w,key(g))))).length;if(sc>bs){best={n,alts};bs=sc;}}
+      if(best){const{n,alts}=best;b.done.add(n.ln);
+        for(let j=0;j<alts.length;j++){const c=clone(b);c.depth=b.depth+1;c.path=(b.path?b.path+'.':'')+(j+1);
+          add({kind:'branch',label:c.path,refs:[n.ln],depth:c.depth,idx:j,of:alts.length});
+          let closed=false;for(const[s,g]of alts[j]){const r=addNode(c,n.w,s,g,'prop',[n.ln]);if(r.closed){closed=true;break;}}
+          if(closed)continue;
+          const res=expand(c);if(!res.closed)return res;}
+        return{closed:true};}
+      add({kind:'open',depth:b.depth,unfinished:b.unfinished});
+      return{open:true,b,unfinished:b.unfinished};}}
+  const b=mkB();let res=null;
+  for(const p of premises){const r=addNode(b,0,true,p,'prem',[]);if(r.closed){res={closed:true};break;}}
+  if(!res){const r=addNode(b,0,false,goal,'concl',[]);if(r.closed)res={closed:true};}
+  if(!res)res=expand(b);
+  return Object.assign(res,{lines});
+}
+function evalM(f,M,w){switch(f.t){case'atom':return M.val[w].has(f.p);case'bot':return false;case'not':return!evalM(f.a,M,w);
+  case'and':return evalM(f.a,M,w)&&evalM(f.b,M,w);case'or':return evalM(f.a,M,w)||evalM(f.b,M,w);case'imp':return!evalM(f.a,M,w)||evalM(f.b,M,w);case'iff':return evalM(f.a,M,w)===evalM(f.b,M,w);
+  case'box':return M.R[f.i][w].every(v=>evalM(f.a,M,v));case'dia':return M.R[f.i][w].some(v=>evalM(f.a,M,v));}}
+function closeRel(R,n,ax){
+  const has=(w,v)=>R[w].includes(v),put=(w,v)=>{if(!has(w,v)){R[w].push(v);return true;}return false;};
+  let ch=true;while(ch){ch=false;
+    for(let w=0;w<n;w++){if(ax.T&&put(w,w))ch=true;
+      for(const v of[...R[w]]){if(ax.B&&put(v,w))ch=true;
+        for(const u of[...R[v]])if(ax['4']&&put(w,u))ch=true;
+        for(const u of[...R[w]])if(ax['5']&&put(v,u))ch=true;}}}
+  if(ax.D)for(let w=0;w<n;w++)if(!R[w].length)R[w].push(w);
+  R.forEach(r=>r.sort((a,b)=>a-b));return R;}
+function modelFromBranch(b,ax,nA){
+  const n=b.worlds,R=[];for(let i=0;i<nA;i++){R.push([...Array(n)].map(()=>[]));}
+  b.edges.forEach(e=>{if(!R[e.i][e.w].includes(e.v))R[e.i][e.w].push(e.v);});
+  Object.entries(b.blockedBy).forEach(([w,u])=>{for(let i=0;i<nA;i++)R[i][u].forEach(v=>{if(!R[i][+w].includes(v))R[i][+w].push(v);});});
+  R.forEach(r=>closeRel(r,n,ax));
+  const val=[...Array(n)].map(()=>new Set());b.nodes.forEach(x=>{if(x.s&&x.f.t==='atom')val[x.w].add(x.f.p);});
+  return{n,R,val};}
+function checkModel(M,prem,goal){return prem.every(p=>evalM(p,M,0))&&!evalM(goal,M,0);}
+function relOK(R,n,ax){
+  for(let w=0;w<n;w++){if(ax.T&&!R[w].includes(w))return false;if(ax.D&&!R[w].length)return false;
+    for(const v of R[w]){if(ax.B&&!R[v].includes(w))return false;
+      for(const u of R[v])if(ax['4']&&!R[w].includes(u))return false;
+      for(const u of R[w])if(ax['5']&&!R[v].includes(u))return false;}}
+  return true;}
+function bruteModel(prem,goal,ax,nA,maxN,budget){
+  maxN=maxN||3;budget=budget||200000;
+  const as=[...[...prem,goal].reduce((s,f)=>atomsOf(f,s),new Set())];
+  for(let n=1;n<=maxN;n++){
+    const rels=[];for(let m=0;m<(1<<(n*n));m++){const R=[...Array(n)].map((_,w)=>{const o=[];for(let v=0;v<n;v++)if((m>>(w*n+v))&1)o.push(v);return o;});if(relOK(R,n,ax))rels.push(R);}
+    const nv=Math.pow(2,n*as.length),combos=Math.pow(rels.length,nA)*nv;
+    if(combos>budget)break;
+    const idx=new Array(nA).fill(0);
+    for(let c=0;c<Math.pow(rels.length,nA);c++){let x=c;for(let i=0;i<nA;i++){idx[i]=x%rels.length;x=Math.floor(x/rels.length);}
+      const R=idx.map(k=>rels[k]);
+      for(let v=0;v<nv;v++){const val=[...Array(n)].map((_,w)=>new Set(as.filter((a,j)=>(v>>(w*as.length+j))&1)));
+        const M={n,R,val};if(checkModel(M,prem,goal))return M;}}}
+  return null;}
+function decide(prem,goal,ax,nA){
+  const tb=tableau(prem,goal,ax,nA);
+  if(tb.closed)return{valid:true,tb};
+  let M=null;
+  if(tb.b){const m=modelFromBranch(tb.b,ax,nA);if(checkModel(m,prem,goal))M=m;}
+  if(!M)M=bruteModel(prem,goal,ax,nA);
+  return{valid:M?false:null,tb,M};}
+</script>
+
+<script>
+/* ================= app state ================= */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const KEY='modal-workbench-v1';
+const S=(boxes,ops,mods,neg)=>({neg:!!neg,mods:mods||[],boxes:boxes.map(b=>typeof b==='string'?{pre:'',text:b}:{pre:b[0],text:b[1]}),ops:ops||[]});
+const PRESETS={
+  alethic:[
+    {name:'Distribution (K)',prem:[S(['p','q'],['imp'],['□']),S([['□','p']])],concl:S([['□','q']])},
+    {name:'Necessary truths are true (T)',prem:[S([['□','p']])],concl:S(['p'])},
+    {name:'Possibly necessary → true (B)',prem:[S([['◇□','p']])],concl:S(['p'])},
+    {name:'Necessarily necessary (4)',prem:[S([['□','p']])],concl:S([['□','p']],[],['□'])},
+    {name:'Necessarily possible (5)',prem:[S([['◇','p']])],concl:S([['◇','p']],[],['□'])},
+    {name:'Possibilities don’t combine (invalid)',prem:[S([['◇','p']]),S([['◇','q']])],concl:S(['p','q'],['and'],['◇'])},
+  ],
+  deontic:[
+    {name:'Ought implies may (D)',prem:[S([['O','p']])],concl:S([['P','p']])},
+    {name:'No conflicting duties (D)',prem:[],concl:S([['O','p'],['O','¬p']],['and'],[],true)},
+    {name:'Forbidden = not permitted',prem:[S([['F','p']])],concl:S([['¬P','p']])},
+    {name:'Duties combine',prem:[S([['O','p']]),S([['O','q']])],concl:S(['p','q'],['and'],['O'])},
+    {name:'Ought doesn’t imply is (invalid in D)',prem:[S([['O','p']])],concl:S(['p'])},
+    {name:'Is doesn’t imply ought (invalid)',prem:[S(['p'])],concl:S([['O','p']])},
+  ],
+  epistemic:[
+    {name:'Knowledge is factive (T)',prem:[S([['K₁','p']])],concl:S(['p'])},
+    {name:'Positive introspection (4)',prem:[S([['K₁','p']])],concl:S([['K₁','p']],[],['K₁'])},
+    {name:'Negative introspection (5)',prem:[S([['¬K₁','p']])],concl:S([['¬K₁','p']],[],['K₁'])},
+    {name:'Knowing what others know (T)',prem:[S([['K₂','p']],[],['K₁'])],concl:S([['K₁','p']])},
+    {name:'Closure under implication',prem:[S(['p','q'],['imp'],['K₁']),S([['K₁','p']])],concl:S([['K₁','q']])},
+    {name:'Alice’s knowledge isn’t Bob’s (invalid)',prem:[S([['K₁','p']])],concl:S([['K₂','p']])},
+  ]
+};
+const VARS={alethic:[['p','it is raining'],['q','the ground is wet']],deontic:[['p','you keep your promise'],['q','you help your friend']],epistemic:[['p','the door is locked'],['q','it is Tuesday']]};
+const DEF_AX={alethic:'T5',deontic:'D',epistemic:'T5'};
+function fresh(tab){const c=x=>JSON.parse(JSON.stringify(x));const p=PRESETS[tab][0];
+  return{vars:VARS[tab].map(([l,m])=>({l,m})),agents:[{m:'Alice'},{m:'Bob'}].slice(0,tab==='epistemic'?2:1),ax:axFrom(DEF_AX[tab]),prem:c(p.prem),concl:c(p.concl)};}
+function defaults(){return{tab:'alethic',alethic:fresh('alethic'),deontic:fresh('deontic'),epistemic:fresh('epistemic')};}
+let state=defaults();
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&s.alethic&&s.deontic&&s.epistemic)state=Object.assign(defaults(),s);}catch(e){}
+let saveT;const save=()=>{clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}},300);};
+const T=()=>state[state.tab];
+const nAg=()=>state.tab==='epistemic'?T().agents.length:1;
+
+const INTRO={
+  alethic:'Necessity and possibility. □p: p is true in every possible world the actual world can access. ◇p: p is true in at least one.',
+  deontic:'Obligation and permission. Op: p holds in every ideal world. Pp: p holds in some ideal world. Fp (forbidden) means O¬p.',
+  epistemic:'Knowledge. Kp: p holds in every world the agent can’t rule out. Mp: p is compatible with what the agent knows.'
+};
+const AXINFO={
+  alethic:{K:['□(p → q) → (□p → □q)','Necessity distributes over “if…then”.'],D:['□p → ◇p','What is necessary is possible.'],T:['□p → p','What is necessary is true.'],B:['p → □◇p','What is true is necessarily possible.'],'4':['□p → □□p','What is necessary is necessarily necessary.'],'5':['◇p → □◇p','What is possible is necessarily possible.']},
+  deontic:{K:['O(p → q) → (Op → Oq)','Obligations carry through “if…then”.'],D:['Op → Pp','Ought implies may: duties never conflict.'],T:['Op → p','Whatever ought to be, is. Usually rejected, since people break rules.'],B:['p → OPp','Whatever is, ought to be permitted.'],'4':['Op → OOp','Obligations are themselves obligatory.'],'5':['Pp → OPp','Permissions are themselves obligatory.']},
+  epistemic:{K:['K(p → q) → (Kp → Kq)','Agents know the consequences of what they know.'],D:['Kp → Mp','Knowledge is consistent.'],T:['Kp → p','Knowledge is factive: you can only know truths.'],B:['p → KMp','If p is true, you know p is possible for you.'],'4':['Kp → KKp','Positive introspection: if you know, you know you know.'],'5':['¬Kp → K¬Kp','Negative introspection: if you don’t know, you know you don’t.']}
+};
+const FRAME={D:'serial',T:'reflexive',B:'symmetric','4':'transitive','5':'euclidean'};
+const VOCAB={
+  alethic:{world:'possible world',worlds:'possible worlds',see:'can access'},
+  deontic:{world:'ideal world',worlds:'ideal worlds',see:'counts as ideal for'},
+  epistemic:{world:'world the agent can’t rule out',worlds:'worlds',see:'can’t rule out'}
+};
+const OPN={and:'∧  and',or:'∨  or',imp:'→  if…then',iff:'↔  iff'};
+function preOptions(tab,nA,withBlankNeg){
+  let ops;
+  if(tab==='alethic')ops=['□','◇','¬□','¬◇','□¬','◇¬','□□','◇□','□◇'];
+  else if(tab==='deontic')ops=['O','P','F','¬O','¬P','O¬'];
+  else{ops=[];for(let i=1;i<=nA;i++){const s=nA>1?sub(i):'';ops.push('K'+s,'M'+s,'¬K'+s,'K'+s+'¬');}}
+  return withBlankNeg?['','¬',...ops]:ops;}
+const agentName=i=>((T().agents[i]||{}).m||'').trim()||'agent '+(i+1);
+
+/* ================= English ================= */
+function eng(f,tab){
+  const t=T(),E=g=>eng(g,tab);
+  const W=(c,p)=>{const s=E(c);return(SYM[c.t]&&c.t!==p.t)?'('+s+')':s;};
+  switch(f.t){
+    case'atom':{const v=t.vars.find(x=>x.l===f.p);return(v&&v.m.trim())||f.p;}
+    case'bot':return'a contradiction';
+    case'not':return'it is not the case that '+E(f.a);
+    case'and':return W(f.a,f)+' and '+W(f.b,f);
+    case'or':return'either '+W(f.a,f)+' or '+W(f.b,f);
+    case'imp':return'if '+W(f.a,f)+', then '+W(f.b,f);
+    case'iff':return W(f.a,f)+' if and only if '+W(f.b,f);
+    case'box':
+      if(tab==='alethic')return'it is necessary that '+E(f.a);
+      if(tab==='deontic')return f.as==='F'&&f.a.t==='not'?'it is forbidden that '+E(f.a.a):'it is obligatory that '+E(f.a);
+      return agentName(f.i)+' knows that '+E(f.a);
+    case'dia':
+      if(tab==='alethic')return'it is possible that '+E(f.a);
+      if(tab==='deontic')return'it is permitted that '+E(f.a);
+      return'for all '+agentName(f.i)+' knows, '+E(f.a);
+  }}
+const sentence=s=>s.replace(/[a-zA-Z]/,c=>c.toUpperCase())+'.';
+const show=f=>str(f,state.tab,nAg());
+
+function buildStmt(st){
+  const tab=state.tab,nA=nAg();
+  st.boxes.forEach((b,i)=>{if(!b.text.trim())throw new Error(`Box ${i+1} is empty.`);try{parse(b.text,tab,nA);}catch(e){throw new Error((st.boxes.length>1?`Box ${i+1}: `:'')+e.message);}});
+  let s='';st.boxes.forEach((b,i)=>{const piece=b.pre+'('+b.text+')';s=i===0?piece:'('+s+')'+({and:'∧',or:'∨',imp:'→',iff:'↔'}[st.ops[i-1]||'and'])+piece;});
+  const pre=st.mods.filter(Boolean).join('');
+  s=(st.neg?'¬':'')+(pre||st.neg?pre+'('+s+')':s);
+  return parse(s,tab,nA);}
+
+/* ================= builder ================= */
+const opt=(v,label,sel)=>`<option value="${esc(v)}"${sel?' selected':''}>${esc(label)}</option>`;
+const range=(a,b,cur)=>{let s='';for(let i=a;i<=b;i++)s+=opt(i,i,i===cur);return s;};
+function stmtHTML(st,id,label){
+  const tab=state.tab,nA=nAg();
+  const pres=preOptions(tab,nA,true),mods=preOptions(tab,nA,false);
+  const qrow=`<div class="qrow">${st.mods.map((q,qi)=>`<select data-act="ms" data-q="${qi}" aria-label="Operator on whole statement">${opt('','— none',!q)}${mods.map(m=>opt(m,m,q===m)).join('')}</select>`).join('')}
+    <button class="mini" data-act="madd">+ operator on whole</button>${st.mods.length?'<button class="mini" data-act="mrm" aria-label="Remove last operator">−</button>':''}</div>`;
+  const boxes=st.boxes.map((b,bi)=>`${bi?`<select class="op" data-act="op" data-b="${bi-1}" aria-label="Connective">${Object.entries(OPN).map(([k,v])=>opt(k,v,(st.ops[bi-1]||'and')===k)).join('')}</select>`:''}<span class="slot"><select class="bpre" data-act="bpre" data-b="${bi}" aria-label="Operator on box ${bi+1}">${pres.map(p=>opt(p,p||'·',b.pre===p)).join('')}</select><input class="box" data-act="box" data-b="${bi}" id="box-${tab}-${id}-${bi}" value="${esc(b.text)}" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Box ${bi+1}"></span>`).join('');
+  return`<div class="stmt${id==='c'?' concl':''}" data-st="${id}">
+    <div class="stmthead"><span class="label">${label}</span><select data-act="sneg" aria-label="Negate whole statement">${opt('','as written',!st.neg)}${opt('1','¬( whole statement )',st.neg)}</select></div>
+    ${qrow}<div class="boxes">${boxes}<button class="mini" data-act="badd">+ box</button>${st.boxes.length>1?'<button class="mini" data-act="brm" aria-label="Remove last box">−</button>':''}</div>
+    <div class="preview" data-prev></div></div>`;}
+function renderBuilder(){
+  const tab=state.tab,t=T(),nA=nAg(),info=AXINFO[tab];
+  document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===tab)));
+  $('intro').textContent=INTRO[tab];
+  const axRow=(a,fixed)=>{const on=fixed||t.ax[a];const[form,desc]=info[a];
+    return`<label class="ax${on?' on':''}${fixed?' fixed':''}">${fixed?'<input type="checkbox" checked disabled aria-label="K is always included">':`<input type="checkbox" data-act="ax" data-ax="${a}" id="ax-${a}"${on?' checked':''}>`}<span class="an">${a}</span><span><span class="af">${esc(form)}</span>${FRAME[a]?`<span class="fr">${FRAME[a]}</span>`:'<span class="fr">always on</span>'}</span><span class="ad">${esc(desc)}</span></label>`;};
+  const sysSel=SYSTEMS.map(([n,k])=>opt(k,n,normAx(axFrom(k))===normAx(t.ax))).join('');
+  const varsHTML=`<div class="cardhead"><h2>Variables</h2><label class="ctl">How many <select data-act="nvars">${range(1,6,t.vars.length)}</select></label></div>
+    <div class="symgrid">${t.vars.map((v,i)=>`<div class="symrow"><input class="sl" data-act="vl" data-i="${i}" id="vl-${tab}-${i}" value="${esc(v.l)}" maxlength="3" aria-label="Letter"><input class="sm" data-act="vm" data-i="${i}" id="vm-${tab}-${i}" value="${esc(v.m)}" placeholder="what ${esc(v.l)} stands for" aria-label="Meaning of ${esc(v.l)}"></div>`).join('')}</div>
+    <p class="hint">Variables are lowercase letters. ${tab==='alethic'?'Type <code>[]</code> for □ and <code>&lt;&gt;</code> for ◇, or use the keys.':tab==='deontic'?'Operators are capital <code>O</code>, <code>P</code>, <code>F</code>.':'Operators are capital <code>K</code> and <code>M</code>'+(nA>1?', with the agent number after them: <code>K1 p</code> or <code>K₁p</code>.':'.')}</p>`;
+  const agentsHTML=tab!=='epistemic'?'':`<div class="cardhead"><h2>Agents</h2><label class="ctl">How many <select data-act="nagents">${range(1,3,t.agents.length)}</select></label></div>
+    <div class="symgrid">${t.agents.map((a,i)=>`<div class="symrow"><span class="sl" style="display:inline-block;padding:6px 0">K${nA>1?sub(i+1):''}</span><input class="sm" data-act="am" data-i="${i}" id="am-${i}" value="${esc(a.m)}" placeholder="name of agent ${i+1}" aria-label="Agent ${i+1} name"></div>`).join('')}</div>`;
+  const keyOps=tab==='alethic'?['□','◇']:tab==='deontic'?['O','P','F']:[...Array(nA)].flatMap((_,i)=>{const s=nA>1?sub(i+1):'';return['K'+s,'M'+s];});
+  const keys=`<div class="keys" id="keys" aria-label="Symbol keys">${['¬','∧','∨','→','↔','(',')',...keyOps].map(k=>`<button class="k-sym" data-k="${esc(k)}">${esc(k)}</button>`).join('')}${t.vars.map(v=>`<button data-k="${esc(v.l)}">${esc(v.l)}</button>`).join('')}</div>`;
+  $('builder').innerHTML=`
+    <section class="card" aria-label="Axioms">
+      <div class="cardhead"><h2>Axioms</h2><label class="ctl">System <select data-act="sys" aria-label="Preset system">${sysSel}${SYSTEMS.some(([,k])=>normAx(axFrom(k))===normAx(t.ax))?'':opt('',sysName(t.ax),true)}</select></label></div>
+      <div><span class="sysname" id="sysname">${esc(sysName(t.ax))}</span> <span class="legend">= K${AXES.filter(a=>t.ax[a]).map(a=>' + '+a).join('')}</span></div>
+      <div class="axioms">${axRow('K',true)}${AXES.map(a=>axRow(a,false)).join('')}</div>
+      <p class="hint">Each axiom matches a condition on which ${VOCAB[tab].worlds} can see which. The proof uses those conditions directly.</p>
+    </section>
+    ${tab==='epistemic'?`<section class="card" aria-label="Agents">${agentsHTML}</section>`:''}
+    <section class="card" aria-label="Variables">${varsHTML}</section>
+    <section class="card" aria-label="Argument">
+      <div class="cardhead"><h2>Argument</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><label class="ctl">Premises <select data-act="nprem">${range(0,5,t.prem.length)}</select></label>
+        <select data-act="preset" aria-label="Load an example">${opt('','Examples…',true)}${PRESETS[tab].map((p,i)=>opt(i,p.name,false)).join('')}</select></div></div>
+      ${keys}
+      ${t.prem.map((st,i)=>stmtHTML(st,'p'+i,'Premise '+(i+1))).join('')}${stmtHTML(t.concl,'c','Conclusion')}
+      <button class="go" data-act="run">Check &amp; prove in <span id="gosys">${esc(sysName(t.ax))}</span></button>
+    </section>`;
+  updatePreviews();}
+function updatePreviews(){
+  const tab=state.tab,t=T();
+  document.querySelectorAll('#builder .stmt').forEach(el=>{
+    const id=el.dataset.st,st=id==='c'?t.concl:t.prem[+id.slice(1)],pv=el.querySelector('[data-prev]');
+    try{const f=buildStmt(st);pv.innerHTML=`<span class="pf">${esc(show(f))}</span><span class="pe">${esc(sentence(eng(f,tab)))}</span>`;}
+    catch(e){pv.innerHTML=`<span class="perr">${esc(e.message)}</span>`;}});}
+
+/* ================= results ================= */
+let R=null;
+const wn=w=>'w'+sub(w);
+function kripkeSVG(M,nA){
+  const n=M.n,W=360,H=n<=2?190:260,cx=W/2,cy=H/2+4,rad=n===1?0:n===2?100:Math.min(105,H/2-46);
+  const pos=[...Array(n)].map((_,k)=>n===1?[cx,cy]:[cx+rad*Math.cos(-Math.PI/2+2*Math.PI*k/n+(n===2?Math.PI/2:0)),cy+rad*Math.sin(-Math.PI/2+2*Math.PI*k/n+(n===2?Math.PI/2:0))]);
+  const r=24;let edges='';
+  const u='k'+Math.random().toString(36).slice(2,6);
+  let defs='';for(let i=0;i<nA;i++)defs+=`<marker id="${u}a${i}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="m${i}"/></marker>`;
+  for(let i=0;i<nA;i++)for(let w=0;w<n;w++)for(const v of M.R[i][w]){
+    const off=(i-(nA-1)/2)*9;
+    if(v===w){const[x,y]=pos[w];const dy=y<cy||n===1?-1:1;const s=1+i*.35;
+      edges+=`<path class="e${i}" d="M${x-10},${y+dy*r*.9} C${x-34*s},${y+dy*(r+44*s)} ${x+34*s},${y+dy*(r+44*s)} ${x+10},${y+dy*r*.95}" marker-end="url(#${u}a${i})"/>`;continue;}
+    const[x1,y1]=pos[w],[x2,y2]=pos[v],dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L,nx=-uy,ny=ux,bend=14+off;
+    const sx=x1+ux*r+nx*6,sy=y1+uy*r+ny*6,ex=x2-ux*(r+2)+nx*6,ey=y2-uy*(r+2)+ny*6,mx=(sx+ex)/2+nx*bend,my=(sy+ey)/2+ny*bend;
+    edges+=`<path class="e${i}" d="M${sx},${sy} Q${mx},${my} ${ex},${ey}" marker-end="url(#${u}a${i})"/>`;}
+  const nodes=pos.map(([x,y],w)=>{const vals=[...M.val[w]];const below=y>=cy||n===1;
+    return`<circle class="wc${w===0?' w0':''}" cx="${x}" cy="${y}" r="${r}"/><text class="wn" x="${x}" y="${y+5}" text-anchor="middle">${wn(w)}</text><text class="wv" x="${x}" y="${below?y+r+18:y-r-8}" text-anchor="middle">${esc(vals.length?vals.join(', '):'∅')}</text>`;}).join('');
+  return`<svg class="kripke" viewBox="0 0 ${W} ${H}" role="img" aria-label="Countermodel diagram"><defs>${defs}</defs>${edges}${nodes}</svg>`;}
+function run(){
+  const tab=state.tab,t=T(),nA=nAg(),box=$('result');R=null;
+  let prem,goal;
+  try{prem=t.prem.map(buildStmt);goal=buildStmt(t.concl);}
+  catch(e){box.innerHTML=`<div class="status bad"><strong>Can’t read the argument.</strong> ${esc(e.message)}</div>`;return;}
+  const name=sysName(t.ax);
+  const res=decide(prem,goal,t.ax,nA);
+  const seq=prem.map(show).join(', ')+(prem.length?' ':'')+'⊢ '+show(goal);
+  let parts=[];
+  if(res.valid===true)parts.push(`<div class="status ok"><strong>Valid in ${esc(name)}.</strong> Every way of making the conclusion false at the actual world ${wn(0)} runs into a contradiction. Step through the tableau to see why.</div>`);
+  else if(res.valid===false)parts.push(`<div class="status bad"><strong>Not valid in ${esc(name)}.</strong> Below is a model that obeys ${esc(name)}’s axioms, where every premise is true at ${wn(0)} and the conclusion is false.</div>`);
+  else parts.push(`<div class="status meh"><strong>Undecided.</strong> The search hit its size limit without closing every branch or finding a countermodel. Try fewer premises or a stronger system.</div>`);
+  const chips=SYSTEMS.slice(0,9).map(([n,k])=>{const d=decide(prem,goal,axFrom(k),nA);const cls=d.valid===true?'yes':d.valid===false?'no':'';
+    return`<span class="chip ${cls}${normAx(axFrom(k))===normAx(t.ax)?' cur':''}">${esc(n)} ${d.valid===true?'✓':d.valid===false?'✗':'?'}</span>`;}).join('');
+  parts.push(`<section class="panel"><h3>Across systems</h3><div class="chips">${chips}</div><p class="legend">✓ valid, ✗ has a countermodel. Compare neighbours to see which axiom the argument depends on.</p></section>`);
+  if(res.M){const M=res.M;
+    const lines=[];for(let w=0;w<M.n;w++){const vs=t.vars.map(v=>v.l).filter(Boolean);const at=[...atomsOf(goal),...prem.flatMap(p=>[...atomsOf(p)])];const all=[...new Set([...vs.filter(v=>at.includes(v)),...at])];
+      lines.push(`${wn(w)}${w===0?' (actual)':''}: ${all.map(a=>a+(M.val[w].has(a)?' true':' false')).join(', ')||'no variables'}`);
+      for(let i=0;i<nA;i++)lines.push(`   ${nA>1?agentName(i)+': ':''}${wn(w)} ${VOCAB[tab].see} ${M.R[i][w].length?M.R[i][w].map(wn).join(', '):'nothing'}`);}
+    parts.push(`<section class="panel"><h3>Countermodel</h3>${kripkeSVG(M,nA)}<p class="legend">Circles are ${VOCAB[tab].worlds}; an arrow from one to another means the first ${VOCAB[tab].see} the second. True variables are listed beside each world.${nA>1?' '+[...Array(nA)].map((_,i)=>`${['Solid','Dashed','Dotted'][i]} = ${esc(agentName(i))}`).join(' · '):''}</p><div class="model">${lines.map(l=>`<span>${esc(l)}</span>`).join('')}</div></section>`);}
+  const L=res.tb.lines;
+  if(L.length){let k=0;L.forEach(x=>{if(x.kind==='node'||x.kind==='rel')x.no=++k;});
+    R={lines:L,step:L.length,seq,name};
+    parts.push(`<section class="sheet" aria-label="Tableau"><div class="sheethead"><span class="seqshow">${esc(seq)}</span><span class="label">Tableau · ${esc(name)}</span></div>
+      <div class="scroller"><div class="proof" id="proofrows"></div></div>
+      <div class="controls"><button data-act="first">Start</button><button data-act="prev">◀ Back</button><button data-act="next">Next ▶</button><button data-act="all">Show all</button>
+        <input type="range" data-act="slider" id="slider" min="1" max="${L.length}" value="${L.length}" aria-label="Tableau step"><span class="counter" id="counter"></span></div>
+      <div class="explain" id="explain"></div></section>`);}
+  box.innerHTML=parts.join('');
+  if(R)renderProof();}
+
+/* ================= tableau stepper ================= */
+const F=f=>`<span class="f">${esc(show(f))}</span>`;
+function lineNo(n){const x=R.lines[n-1];return x?x.no:n;}
+const refsTxt=refs=>refs.map(lineNo).join(', ');
+function srcSym(f){if(f.t==='not')return'¬';if(SYM[f.t])return SYM[f.t];if(isM(f))return opSym(f,state.tab,nAg());return'';}
+function justOf(x){
+  if(x.kind==='node'){if(x.rule==='prem')return'Premise';if(x.rule==='concl')return'Assume false';const src=R.lines[x.refs[0]-1];return srcSym(src.f)+' '+refsTxt(x.refs);}
+  if(x.kind==='rel'){if(x.rule==='T')return'T';if(x.rule==='D')return'D '+refsTxt(x.refs);if(x.rule==='pi'){return srcSym(R.lines[x.refs[0]-1].f)+' '+refsTxt(x.refs);}return x.rule+' '+refsTxt(x.refs);}
+  if(x.kind==='close')return'✕ '+refsTxt(x.refs);
+  return'';}
+function explainLine(x){
+  const tab=state.tab,V=VOCAB[tab],nA=nAg(),ag=i=>nA>1||tab==='epistemic'?agentName(i):'';
+  const at=n=>R.lines[n-1],ln=n=>'line '+lineNo(n),truth=(s)=>s?'true':'false';
+  switch(x.kind){
+    case'branch':{const src=at(x.refs[0]);return`<b>Branch ${x.label}.</b> ${F(src.f)} being ${truth(src.s)} at ${wn(src.w)} (${ln(x.refs[0])}) can happen in ${x.of} ways, so the tableau splits. This is case ${x.idx+1}. Every case must close for the argument to be valid.`;}
+    case'close':return x.bot?`⊥ can’t be true anywhere, so this branch closes.`:`Contradiction at ${wn(x.w)}: ${F(x.f)} is both true and false (${x.refs.map(ln).join(' and ')}). This branch closes.`;
+    case'open':return x.unfinished?`The search stopped at its size limit before this branch finished.`:`Nothing more can be applied and there is no contradiction. This branch stays open, and it describes a countermodel.`;
+    case'rel':{const who=ag(x.i)?` (for ${esc(ag(x.i))})`:'';
+      if(x.rule==='T')return`Axiom T makes the relation reflexive: every ${V.world} ${V.see} itself, so ${wn(x.w)} ${V.see} ${wn(x.w)}${who}.`;
+      if(x.rule==='B')return`Axiom B makes the relation symmetric: ${wn(x.v)} ${V.see} ${wn(x.w)}, so ${wn(x.w)} ${V.see} ${wn(x.v)}${who}.`;
+      if(x.rule==='4'){const a=at(x.refs[0]),b=at(x.refs[1]);return`Axiom 4 makes the relation transitive: ${wn(a.w)} sees ${wn(a.v)} and ${wn(b.w)} sees ${wn(b.v)}, so ${wn(x.w)} ${V.see} ${wn(x.v)}${who}.`;}
+      if(x.rule==='5'){const a=at(x.refs[0]),b=at(x.refs[1]);return`Axiom 5 makes the relation euclidean: ${wn(a.w)} sees both ${wn(a.v)} and ${wn(b.v)}, so ${wn(x.w)} ${V.see} ${wn(x.v)}${who}.`;}
+      if(x.rule==='D')return`Axiom D makes the relation serial: every ${V.world} must see at least one. ${wn(x.w)} saw none, so we add ${wn(x.v)}${who}.`;
+      const src=at(x.refs[0]);return`${F(src.f)} is ${truth(src.s)} at ${wn(src.w)}, which needs some ${V.world} where ${F(src.f.a)} is ${truth(src.s)}. Introduce a new one, ${wn(x.v)}, that ${wn(x.w)} ${V.see}${who}.`;}
+    case'node':{
+      if(x.rule==='prem')return`Premise: suppose ${F(x.f)} is true at the actual world ${wn(0)}.`;
+      if(x.rule==='concl')return`To test validity, suppose the conclusion ${F(x.f)} is false at ${wn(0)}. If every branch then hits a contradiction, the argument is valid.`;
+      const src=at(x.refs[0]),f=src.f;
+      if(x.rule==='nu'){const e=at(x.refs[1]);const isBox=f.t==='box';
+        return`${F(f)} is ${truth(src.s)} at ${wn(src.w)}, so ${F(f.a)} is ${truth(src.s)} at <i>every</i> ${V.world} ${wn(src.w)} ${V.see}. ${wn(e.v)} is one (${ln(x.refs[1])}), so ${F(x.f)} is ${truth(x.s)} there.${isBox?'':''}`;}
+      if(x.rule==='piNode')return`At the new ${V.world} ${wn(x.w)}, ${F(x.f)} is ${truth(x.s)}, as ${F(f)} being ${truth(src.s)} at ${wn(src.w)} requires.`;
+      if(f.t==='not')return`${F(f)} is ${truth(src.s)} at ${wn(src.w)}, so ${F(f.a)} is ${truth(!src.s)} there.`;
+      const nm={and:'conjunction',or:'disjunction',imp:'conditional',iff:'biconditional'}[f.t];
+      return`${F(f)} is a ${nm} that is ${truth(src.s)} at ${wn(src.w)} (${ln(x.refs[0])}), so ${F(x.f)} is ${truth(x.s)} there.`;}}
+  return'';}
+function renderProof(){
+  if(!R)return;const L=R.lines,n=L.length,step=R.step,cur=L[step-1];
+  const refset=new Set(cur.refs||[]);
+  $('proofrows').innerHTML=L.slice(0,step).map((x,i)=>{
+    const cls='row'+(i===step-1?' cur':refset.has(i+1)?' isref':'');
+    const bars='<span class="bar"></span>'.repeat(x.depth);
+    let body;
+    if(x.kind==='node')body=`<span class="ftxt${x.s?'':' false'}"><span class="wt">${wn(x.w)}</span><span class="sgn">${x.s?'⊨':'⊭'}</span>${esc(show(x.f))}</span>`;
+    else if(x.kind==='rel')body=`<span class="ftxt rel"><span class="wt">${wn(x.w)}</span> R${nAg()>1?sub(x.i+1):''} <span class="wt">${wn(x.v)}</span></span>`;
+    else if(x.kind==='branch')body=`<span class="ftxt br">Branch ${esc(x.label)}</span>`;
+    else if(x.kind==='close')body=`<span class="ftxt close">✕ closed</span>`;
+    else body=`<span class="ftxt open">${x.unfinished?'… stopped':'○ open'}</span>`;
+    return`<div class="${cls}"><span class="num">${x.no||''}</span><div class="fcell">${bars}${body}</div><span class="just">${esc(justOf(x))}</span></div>`;}).join('');
+  const sl=$('slider');sl.max=n;sl.value=step;
+  $('counter').textContent=`step ${step} of ${n}`;
+  const q=a=>document.querySelector(`#result [data-act="${a}"]`);
+  q('first').disabled=q('prev').disabled=step<=1;q('next').disabled=q('all').disabled=step>=n;
+  const title=cur.kind==='node'?(cur.rule==='prem'?'Premise':cur.rule==='concl'?'Negated conclusion':cur.rule==='nu'?'Necessity rule':cur.rule==='piNode'?'New world':'Propositional rule')
+    :cur.kind==='rel'?(cur.rule==='pi'?'New world':cur.rule==='D'?'Axiom D':'Axiom '+cur.rule):cur.kind==='branch'?'Split':cur.kind==='close'?'Branch closes':'Branch open';
+  $('explain').innerHTML=`<div class="label">Step ${step}</div><h4>${esc(title)}</h4><p>${explainLine(cur)}</p>`;}
+
+/* ================= events ================= */
+let lastBox=null;
+function stmtOf(el){const s=el.closest('.stmt');if(!s)return null;const id=s.dataset.st;return id==='c'?T().concl:T().prem[+id.slice(1)];}
+const resize=(a,n,m)=>{while(a.length<n)a.push(m(a.length));a.length=n;};
+const DEFV=['p','q','r','s','t','u'];
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.tab=b.dataset.tab;save();renderBuilder();run();b.scrollIntoView({inline:'nearest',block:'nearest'});});
+$('builder').addEventListener('focusin',e=>{if(e.target.classList.contains('box'))lastBox=e.target;});
+$('builder').addEventListener('input',e=>{const el=e.target,act=el.dataset.act,t=T(),i=+el.dataset.i;
+  if(act==='box')stmtOf(el).boxes[+el.dataset.b].text=el.value;
+  else if(act==='vl')t.vars[i].l=el.value.trim();else if(act==='vm')t.vars[i].m=el.value;
+  else if(act==='am')t.agents[i].m=el.value;else return;
+  save();updatePreviews();});
+$('builder').addEventListener('change',e=>{const el=e.target,act=el.dataset.act,t=T(),v=el.value;if(!act)return;const st=stmtOf(el);let re=true;
+  switch(act){
+    case'ax':t.ax[el.dataset.ax]=el.checked;break;
+    case'sys':if(v==='')return;t.ax=axFrom(v);break;
+    case'nvars':resize(t.vars,+v,()=>({l:DEFV.find(l=>!t.vars.some(x=>x.l===l))||'p',m:''}));break;
+    case'nagents':resize(t.agents,+v,k=>({m:['Alice','Bob','Carol'][k]||''}));break;
+    case'nprem':resize(t.prem,+v,()=>S([t.vars[0].l]));break;
+    case'preset':if(v==='')return;{const p=PRESETS[state.tab][+v];t.prem=JSON.parse(JSON.stringify(p.prem));t.concl=JSON.parse(JSON.stringify(p.concl));if(state.tab==='epistemic'&&p.prem.concat([p.concl]).some(s=>JSON.stringify(s).includes('₂'))&&t.agents.length<2)t.agents.push({m:'Bob'});}
+      save();renderBuilder();run();return;
+    case'sneg':st.neg=!!v;re=false;break;case'bpre':st.boxes[+el.dataset.b].pre=v;re=false;break;
+    case'op':st.ops[+el.dataset.b]=v;re=false;break;case'ms':st.mods[+el.dataset.q]=v;re=false;break;
+    default:return;}
+  save();if(re)renderBuilder();else updatePreviews();});
+$('builder').addEventListener('pointerdown',e=>{if(e.target.closest('#keys button'))e.preventDefault();});
+$('builder').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.k!=null){const inp=lastBox&&document.body.contains(lastBox)?lastBox:document.querySelector('#builder .box');if(!inp)return;
+    const s=inp.selectionStart??inp.value.length,t2=inp.selectionEnd??s,k=b.dataset.k;
+    inp.value=inp.value.slice(0,s)+k+inp.value.slice(t2);inp.setSelectionRange(s+k.length,s+k.length);lastBox=inp;inp.dispatchEvent(new Event('input',{bubbles:true}));return;}
+  const act=b.dataset.act,st=stmtOf(b);
+  switch(act){
+    case'run':run();$('result').scrollIntoView({behavior:'smooth',block:'start'});return;
+    case'badd':st.boxes.push({pre:'',text:''});st.ops.push('and');break;
+    case'brm':st.boxes.pop();st.ops.length=Math.max(0,st.boxes.length-1);break;
+    case'madd':st.mods.push(preOptions(state.tab,nAg(),false)[0]);break;
+    case'mrm':st.mods.pop();break;
+    default:return;}
+  save();renderBuilder();});
+$('result').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!R)return;const a=b.dataset.act;
+  if(a==='first')R.step=1;else if(a==='prev'&&R.step>1)R.step--;else if(a==='next'&&R.step<R.lines.length)R.step++;else if(a==='all')R.step=R.lines.length;else return;renderProof();});
+$('result').addEventListener('input',e=>{if(e.target.dataset.act==='slider'&&R){R.step=+e.target.value;renderProof();}});
+document.addEventListener('keydown',e=>{if(!R||(e.target.tagName==='INPUT'&&e.target.type!=='range')||e.target.tagName==='SELECT')return;
+  if(e.key==='ArrowRight'&&R.step<R.lines.length){R.step++;renderProof();}if(e.key==='ArrowLeft'&&R.step>1){R.step--;renderProof();}});
+renderBuilder();run();
+</script>
+
+<script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}</script>
+</body>
+</html>
